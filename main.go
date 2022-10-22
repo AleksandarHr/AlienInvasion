@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/AleksandarHr/AlienInvasion/structs"
 	"github.com/AleksandarHr/AlienInvasion/utils"
@@ -24,9 +25,9 @@ func main() {
 
 	world.InitializeWorld(mapInfo)
 
-	// world.PrintCitiesTopology()
+	world.PrintCitiesTopology()
+	fmt.Println()
 
-	// fmt.Println()
 	// fmt.Println("Print city connections")
 	// world.PrintCitiesConnections()
 
@@ -36,6 +37,7 @@ func main() {
 	// world.RemoveCity(toRemove)
 	// world.PrintCitiesConnections()
 
+	// Spawn aliens
 	for i := 0; i < aliensCount; i++ {
 		alien := structs.CreateAlien(i)
 		allCities, err := world.GetAllCities()
@@ -47,6 +49,14 @@ func main() {
 			// TODO
 		}
 		originCity := allCities[randCityIdx]
+		// NOTE: It is possible to spanw an alien at a city where there already is an alien!
 		alien.SpawnAlien(originCity)
+		world.AddNewAlienToWorld(alien, originCity)
+
+		world.PrintExistingCities()
+		world.PrintAliensInfo()
 	}
+
+	// Simulate iterations
+
 }

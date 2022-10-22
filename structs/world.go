@@ -13,7 +13,7 @@ type World struct {
 	aliens map[int]*Alien
 
 	// city names mapped to alien IDs
-	citiesAliens map[string]int
+	citiesAliens map[*City]*Alien
 
 	// map a city name to the names of all the cities it is linked to
 	cityConnections map[string]map[string]bool
@@ -24,6 +24,7 @@ func CreateWorld() *World {
 		cities:          make(map[string]*City),
 		aliens:          make(map[int]*Alien),
 		cityConnections: make(map[string]map[string]bool),
+		citiesAliens:    make(map[*City]*Alien),
 	}
 }
 
@@ -109,6 +110,29 @@ func (w *World) removeConnection(connection, cityNameToRemove string) {
 	delete(w.cityConnections[connection], cityNameToRemove)
 }
 
+// AddNewAlienToWorld attempts to spawn a new alien at origin city.
+// Returns false if spawning was not successful (e.g. there already was an alien there)
+func (w *World) AddNewAlienToWorld(newAlien *Alien, origin *City) (bool, error) {
+	// the city already has an alien there
+	if existingAlien, hasAlien := w.citiesAliens[origin]; hasAlien {
+		// kill existing alien
+		delete(w.aliens, existingAlien.ID)
+		delete(w.citiesAliens, origin)
+
+		// destroy city
+		w.RemoveCity(origin.Name)
+
+		fmt.Printf("%s has been destroyed by alien %d and alien %d\n", origin.Name, existingAlien.ID, newAlien.ID)
+		return false, nil
+	}
+
+	// there is not alien in the origin city, spawn the new alien there
+	w.aliens[newAlien.ID] = newAlien
+	w.citiesAliens[origin] = newAlien
+
+	return true, nil
+}
+
 func (w *World) GetAllCities() ([]*City, error) {
 	cities := []*City{}
 	for _, city := range w.cities {
@@ -117,6 +141,9 @@ func (w *World) GetAllCities() ([]*City, error) {
 	return cities, nil
 }
 
+// =========================================================================================
+// Print Helpers
+// =========================================================================================
 func (w *World) PrintCitiesTopology() {
 	for _, city := range w.cities {
 		fmt.Printf("%s : ", city.Name)
@@ -139,4 +166,19 @@ func (w *World) PrintCitiesConnections() {
 		}
 		fmt.Println()
 	}
+}
+
+func (w *World) PrintAliensInfo() {
+	for id, alien := range w.aliens {
+		fmt.Printf("Alien %d is in %s\n", id, alien.Location.Name)
+	}
+	fmt.Println()
+}
+
+func (w *World) PrintExistingCities() {
+	fmt.Print("Remaining cities: ")
+	for cityName, _ := range w.cities {
+		fmt.Printf("%s, ", cityName)
+	}
+	fmt.Println()
 }
