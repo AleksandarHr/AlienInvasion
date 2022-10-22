@@ -8,15 +8,9 @@ type City struct {
 }
 
 func CreateCity(cityName string) *City {
-	neighboursMap := map[Direction]*City{
-		North: nil,
-		East:  nil,
-		South: nil,
-		West:  nil,
-	}
 	return &City{
 		Name:       cityName,
-		Neighbours: neighboursMap,
+		Neighbours: map[Direction]*City{},
 	}
 }
 
@@ -27,4 +21,12 @@ func (c *City) AddNeighbour(dir Direction, neighbour *City) error {
 	}
 	c.Neighbours[dir] = neighbour
 	return nil
+}
+
+func (c *City) HasNeighbours() bool {
+	if c.Neighbours[North] != nil || c.Neighbours[East] != nil || c.Neighbours[South] != nil || c.Neighbours[West] != nil {
+		return true
+	}
+
+	return false
 }

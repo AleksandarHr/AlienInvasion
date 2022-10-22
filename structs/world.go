@@ -12,8 +12,11 @@ type World struct {
 	// aliens within the world
 	aliens map[int]*Alien
 
+	// aliens within the world who are untrapped (e.g. can travel to a neighboring city)
+	freeAliens map[int]*Alien
+
 	// city names mapped to alien IDs
-	citiesAliens map[*City]*Alien
+	citiesAliens map[string]*Alien
 
 	// map a city name to the names of all the cities it is linked to
 	cityConnections map[string]map[string]bool
@@ -23,8 +26,9 @@ func CreateWorld() *World {
 	return &World{
 		cities:          make(map[string]*City),
 		aliens:          make(map[int]*Alien),
+		freeAliens:      make(map[int]*Alien),
 		cityConnections: make(map[string]map[string]bool),
-		citiesAliens:    make(map[*City]*Alien),
+		citiesAliens:    make(map[string]*Alien),
 	}
 }
 
@@ -48,7 +52,12 @@ func (w *World) InitializeWorld(mapInfo map[string][]string) {
 		for _, neighbourInfo := range neighbourNames {
 			temp := strings.Split(neighbourInfo, "=")
 			neighbourDirection, neighbourName := temp[0], temp[1]
-			neighbourCity := w.AddNewCity(neighbourName)
+			var neighbourCity *City
+			if nCity, exists := w.cities[neighbourName]; !exists {
+				neighbourCity = w.AddNewCity(neighbourName)
+			} else {
+				neighbourCity = nCity
+			}
 
 			// add neighbour info to current city
 			city.Neighbours[StringToDirection(neighbourDirection)] = neighbourCity
@@ -98,37 +107,70 @@ func (w *World) RemoveCity(cityNameToRemove string) error {
 func (w *World) removeConnection(connection, cityNameToRemove string) {
 	connectionCity := w.cities[connection]
 	if connectionCity.Neighbours[North] != nil && connectionCity.Neighbours[North].Name == cityNameToRemove {
-		connectionCity.Neighbours[North] = nil
+		delete(connectionCity.Neighbours, North)
 	} else if connectionCity.Neighbours[East] != nil && connectionCity.Neighbours[East].Name == cityNameToRemove {
-		connectionCity.Neighbours[East] = nil
+		delete(connectionCity.Neighbours, East)
 	} else if connectionCity.Neighbours[South] != nil && connectionCity.Neighbours[South].Name == cityNameToRemove {
-		connectionCity.Neighbours[South] = nil
+		delete(connectionCity.Neighbours, South)
 	} else if connectionCity.Neighbours[West] != nil && connectionCity.Neighbours[West].Name == cityNameToRemove {
-		connectionCity.Neighbours[West] = nil
+		delete(connectionCity.Neighbours, West)
 	}
 
 	delete(w.cityConnections[connection], cityNameToRemove)
+	// if the connectionCity is left with no connections, update freeAliens map if necessary
+	if !connectionCity.HasNeighbours() {
+		if alien, ok := w.citiesAliens[connectionCity.Name]; ok {
+			delete(w.freeAliens, alien.ID)
+		}
+	}
 }
 
 // AddNewAlienToWorld attempts to spawn a new alien at origin city.
 // Returns false if spawning was not successful (e.g. there already was an alien there)
-func (w *World) AddNewAlienToWorld(newAlien *Alien, origin *City) (bool, error) {
+func (w *World) AddAlienToCity(newAlien *Alien, from *City, to *City) (bool, error) {
 	// the city already has an alien there
-	if existingAlien, hasAlien := w.citiesAliens[origin]; hasAlien {
+	if existingAlien, hasAlien := w.citiesAliens[to.Name]; hasAlien {
 		// kill existing alien
 		delete(w.aliens, existingAlien.ID)
-		delete(w.citiesAliens, origin)
+		if _, ok := w.freeAliens[existingAlien.ID]; ok {
+			delete(w.freeAliens, existingAlien.ID)
+		}
+
+		// kill new alien
+		if _, ok := w.aliens[newAlien.ID]; ok {
+			delete(w.aliens, newAlien.ID)
+		}
+		if _, ok := w.freeAliens[existingAlien.ID]; ok {
+			delete(w.freeAliens, existingAlien.ID)
+		}
+
+		// remove mapping from city to alien in the city
+		delete(w.citiesAliens, to.Name)
+		if from != nil {
+			if _, ok := w.citiesAliens[from.Name]; ok {
+				delete(w.citiesAliens, from.Name)
+			}
+		}
 
 		// destroy city
-		w.RemoveCity(origin.Name)
+		w.RemoveCity(to.Name)
 
-		fmt.Printf("%s has been destroyed by alien %d and alien %d\n", origin.Name, existingAlien.ID, newAlien.ID)
+		fmt.Printf("%s has been destroyed by alien %d and alien %d\n", to.Name, existingAlien.ID, newAlien.ID)
 		return false, nil
 	}
 
+	if from != nil {
+		if _, ok := w.citiesAliens[from.Name]; ok {
+			delete(w.citiesAliens, from.Name)
+		}
+	}
 	// there is not alien in the origin city, spawn the new alien there
+	newAlien.Location = to
 	w.aliens[newAlien.ID] = newAlien
-	w.citiesAliens[origin] = newAlien
+	w.citiesAliens[to.Name] = newAlien
+	if to.HasNeighbours() {
+		w.freeAliens[newAlien.ID] = newAlien
+	}
 
 	return true, nil
 }
@@ -139,6 +181,21 @@ func (w *World) GetAllCities() ([]*City, error) {
 		cities = append(cities, city)
 	}
 	return cities, nil
+}
+
+func (w *World) GetFreeAliens() ([]*Alien, error) {
+	currentFreeAliens := []*Alien{}
+	for _, alien := range w.freeAliens {
+		currentFreeAliens = append(currentFreeAliens, alien)
+	}
+	return currentFreeAliens, nil
+}
+
+func (w *World) IsAlienStillAliveAndFree(alien *Alien) bool {
+	if _, exists := w.freeAliens[alien.ID]; exists {
+		return true
+	}
+	return false
 }
 
 // =========================================================================================
@@ -181,4 +238,12 @@ func (w *World) PrintExistingCities() {
 		fmt.Printf("%s, ", cityName)
 	}
 	fmt.Println()
+}
+
+func (w *World) AllAliensDead() bool {
+	return len(w.aliens) == 0
+}
+
+func (w *World) AllAliensTrapped() bool {
+	return len(w.freeAliens) == 0
 }
