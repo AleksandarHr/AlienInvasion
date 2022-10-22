@@ -1,4 +1,5 @@
-./map.txt
+map.txt
+.vscode
 
 *bin
 *.test

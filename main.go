@@ -23,5 +23,5 @@ func main() {
 	}
 
 	world.InitializeWorld(mapInfo)
-
+	world.PrintCitiesTopology()
 }

@@ -8,7 +8,10 @@ type City struct {
 }
 
 func CreateCity(cityName string) *City {
-	return &City{Name: cityName}
+	return &City{
+		Name:       cityName,
+		Neighbours: make(map[Direction]*City),
+	}
 }
 
 func (c *City) AddNeighbour(dir Direction, neighbour *City) error {
