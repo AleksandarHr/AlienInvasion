@@ -2,8 +2,11 @@ package utils
 
 import (
 	"bufio"
+	"fmt"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
 func ParseInputFile(fname string) (map[string][]string, error) {
@@ -25,4 +28,14 @@ func ParseInputFile(fname string) (map[string][]string, error) {
 	}
 
 	return mapInfo, nil
+}
+
+func GenerateRandomNumber(n int) (int, error) {
+	r := 0
+	if n <= 0 {
+		return r, fmt.Errorf("Invalid bounds for RNG.")
+	}
+	rand.Seed(time.Now().UnixNano())
+	r = rand.Intn(n)
+	return r, nil
 }

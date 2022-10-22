@@ -10,7 +10,10 @@ type World struct {
 	cities map[string]*City
 
 	// aliens within the world
-	aliens map[string]*Alien
+	aliens map[int]*Alien
+
+	// city names mapped to alien IDs
+	citiesAliens map[string]int
 
 	// map a city name to the names of all the cities it is linked to
 	cityConnections map[string]map[string]bool
@@ -19,7 +22,7 @@ type World struct {
 func CreateWorld() *World {
 	return &World{
 		cities:          make(map[string]*City),
-		aliens:          make(map[string]*Alien),
+		aliens:          make(map[int]*Alien),
 		cityConnections: make(map[string]map[string]bool),
 	}
 }
@@ -36,6 +39,7 @@ func (w *World) AddNewCity(name string) *City {
 	return newCity
 }
 
+// InitializeWorld creates the world based on information from the map file
 func (w *World) InitializeWorld(mapInfo map[string][]string) {
 	for cityName, neighbourNames := range mapInfo {
 		city := w.AddNewCity(cityName)
@@ -57,6 +61,7 @@ func (w *World) InitializeWorld(mapInfo map[string][]string) {
 	}
 }
 
+// addLinks populates informatino about links between a given pair of cities
 func (w *World) addLinks(cityOneName, cityTwoName string) {
 	if _, exists := w.cityConnections[cityOneName]; !exists {
 		w.cityConnections[cityOneName] = make(map[string]bool)
@@ -69,6 +74,7 @@ func (w *World) addLinks(cityOneName, cityTwoName string) {
 	w.cityConnections[cityTwoName][cityOneName] = true
 }
 
+// RemoveCity removes the given city and any related information about it from the world
 func (w *World) RemoveCity(cityNameToRemove string) error {
 	if _, exists := w.cities[cityNameToRemove]; !exists {
 		return fmt.Errorf("City with name %s does not exist", cityNameToRemove)
@@ -87,6 +93,7 @@ func (w *World) RemoveCity(cityNameToRemove string) error {
 	return nil
 }
 
+// removeConnection deletes information about connection between the two cities
 func (w *World) removeConnection(connection, cityNameToRemove string) {
 	connectionCity := w.cities[connection]
 	if connectionCity.Neighbours[North] != nil && connectionCity.Neighbours[North].Name == cityNameToRemove {
@@ -100,6 +107,14 @@ func (w *World) removeConnection(connection, cityNameToRemove string) {
 	}
 
 	delete(w.cityConnections[connection], cityNameToRemove)
+}
+
+func (w *World) GetAllCities() ([]*City, error) {
+	cities := []*City{}
+	for _, city := range w.cities {
+		cities = append(cities, city)
+	}
+	return cities, nil
 }
 
 func (w *World) PrintCitiesTopology() {

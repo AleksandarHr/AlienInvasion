@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/AleksandarHr/AlienInvasion/structs"
 	"github.com/AleksandarHr/AlienInvasion/utils"
@@ -24,15 +23,30 @@ func main() {
 	}
 
 	world.InitializeWorld(mapInfo)
-	world.PrintCitiesTopology()
 
-	fmt.Println()
-	fmt.Println("Print city connections")
-	world.PrintCitiesConnections()
+	// world.PrintCitiesTopology()
 
-	toRemove := "Foo"
-	fmt.Println()
-	fmt.Printf("Remove %s and print connections\n", toRemove)
-	world.RemoveCity(toRemove)
-	world.PrintCitiesConnections()
+	// fmt.Println()
+	// fmt.Println("Print city connections")
+	// world.PrintCitiesConnections()
+
+	// toRemove := "Foo"
+	// fmt.Println()
+	// fmt.Printf("Remove %s and print connections\n", toRemove)
+	// world.RemoveCity(toRemove)
+	// world.PrintCitiesConnections()
+
+	for i := 0; i < aliensCount; i++ {
+		alien := structs.CreateAlien(i)
+		allCities, err := world.GetAllCities()
+		if err != nil {
+			// TODO
+		}
+		randCityIdx, err := utils.GenerateRandomNumber(len(allCities))
+		if err != nil {
+			// TODO
+		}
+		originCity := allCities[randCityIdx]
+		alien.SpawnAlien(originCity)
+	}
 }
