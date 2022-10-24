@@ -2,7 +2,10 @@ package structs
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+
+	"github.com/phuslu/log"
 )
 
 type World struct {
@@ -127,9 +130,17 @@ func (w *World) removeConnection(connection, cityNameToRemove string) {
 
 // AddNewAlienToWorld attempts to spawn a new alien at origin city.
 // Returns false if spawning was not successful (e.g. there already was an alien there)
-func (w *World) AddAlienToCity(newAlien *Alien, from *City, to *City) (bool, error) {
+func (w *World) AddAlienToCity(alien *Alien, to *City) (bool, error) {
+	from := alien.Location
+	if from != nil {
+		if _, ok := w.citiesAliens[from.Name]; ok {
+			delete(w.citiesAliens, from.Name)
+		}
+	}
+
 	// the city already has an alien there
 	if existingAlien, hasAlien := w.citiesAliens[to.Name]; hasAlien {
+
 		// kill existing alien
 		delete(w.aliens, existingAlien.ID)
 		if _, ok := w.freeAliens[existingAlien.ID]; ok {
@@ -137,39 +148,29 @@ func (w *World) AddAlienToCity(newAlien *Alien, from *City, to *City) (bool, err
 		}
 
 		// kill new alien
-		if _, ok := w.aliens[newAlien.ID]; ok {
-			delete(w.aliens, newAlien.ID)
+		if _, ok := w.aliens[alien.ID]; ok {
+			delete(w.aliens, alien.ID)
 		}
-		if _, ok := w.freeAliens[existingAlien.ID]; ok {
-			delete(w.freeAliens, existingAlien.ID)
+		if _, ok := w.freeAliens[alien.ID]; ok {
+			delete(w.freeAliens, alien.ID)
 		}
 
 		// remove mapping from city to alien in the city
 		delete(w.citiesAliens, to.Name)
-		if from != nil {
-			if _, ok := w.citiesAliens[from.Name]; ok {
-				delete(w.citiesAliens, from.Name)
-			}
-		}
 
 		// destroy city
 		w.RemoveCity(to.Name)
 
-		fmt.Printf("%s has been destroyed by alien %d and alien %d\n", to.Name, existingAlien.ID, newAlien.ID)
+		fmt.Printf("Alien %d tried to move to %s. %s has been destroyed by alien %d and alien %d\n", alien.ID, to.Name, to.Name, existingAlien.ID, alien.ID)
 		return false, nil
 	}
 
-	if from != nil {
-		if _, ok := w.citiesAliens[from.Name]; ok {
-			delete(w.citiesAliens, from.Name)
-		}
-	}
 	// there is not alien in the origin city, spawn the new alien there
-	newAlien.Location = to
-	w.aliens[newAlien.ID] = newAlien
-	w.citiesAliens[to.Name] = newAlien
+	alien.Location = to
+	w.aliens[alien.ID] = alien
+	w.citiesAliens[to.Name] = alien
 	if to.HasNeighbours() {
-		w.freeAliens[newAlien.ID] = newAlien
+		w.freeAliens[alien.ID] = alien
 	}
 
 	return true, nil
@@ -198,52 +199,57 @@ func (w *World) IsAlienStillAliveAndFree(alien *Alien) bool {
 	return false
 }
 
-// =========================================================================================
-// Print Helpers
-// =========================================================================================
-func (w *World) PrintCitiesTopology() {
-	for _, city := range w.cities {
-		fmt.Printf("%s : ", city.Name)
-		if len(city.Neighbours) != 0 {
-			for dir, neighbour := range city.Neighbours {
-				if neighbour != nil {
-					fmt.Printf("%s=%s, ", dir.String(), neighbour.Name)
-				}
-			}
-		}
-		fmt.Println()
-	}
-}
-
-func (w *World) PrintCitiesConnections() {
-	for cityName, connectionCities := range w.cityConnections {
-		fmt.Printf("%s is connected to ", cityName)
-		for connection, _ := range connectionCities {
-			fmt.Printf("%s, ", connection)
-		}
-		fmt.Println()
-	}
-}
-
-func (w *World) PrintAliensInfo() {
-	for id, alien := range w.aliens {
-		fmt.Printf("Alien %d is in %s\n", id, alien.Location.Name)
-	}
-	fmt.Println()
-}
-
-func (w *World) PrintExistingCities() {
-	fmt.Print("Remaining cities: ")
-	for cityName, _ := range w.cities {
-		fmt.Printf("%s, ", cityName)
-	}
-	fmt.Println()
-}
-
 func (w *World) AllAliensDead() bool {
 	return len(w.aliens) == 0
 }
 
 func (w *World) AllAliensTrapped() bool {
 	return len(w.freeAliens) == 0
+}
+
+// =========================================================================================
+// Print Helpers
+// =========================================================================================
+func (w *World) PrintCitiesTopology(debugLogger log.Logger) {
+	for _, city := range w.cities {
+		var topology strings.Builder
+		topology.WriteString(city.Name + ": ")
+		if len(city.Neighbours) != 0 {
+			for dir, neighbour := range city.Neighbours {
+				if neighbour != nil {
+					topology.WriteString(dir.String() + "=" + neighbour.Name)
+				}
+			}
+		}
+		debugLogger.Info().Msgf("%s", topology.String())
+	}
+}
+
+func (w *World) PrintCitiesConnections(debugLogger log.Logger) {
+	for cityName, connectionCities := range w.cityConnections {
+		var connections strings.Builder
+		connections.WriteString(cityName + " is connected to: ")
+		for connection, _ := range connectionCities {
+			connections.WriteString(connection + ", ")
+		}
+		debugLogger.Info().Msgf("%s", connections.String())
+	}
+}
+
+func (w *World) PrintAliensInfo(debugLogger log.Logger) {
+	var aliens strings.Builder
+	for id, alien := range w.aliens {
+		aliens.WriteString("Alien " + strconv.Itoa(id) + " is in " + alien.Location.Name + ", ")
+	}
+	debugLogger.Info().Msgf("%s", aliens.String())
+}
+
+func (w *World) PrintExistingCities(debugLogger log.Logger) {
+	var cities strings.Builder
+
+	for cityName, _ := range w.cities {
+		cities.WriteString(", ")
+		cities.WriteString(cityName)
+	}
+	debugLogger.Info().Msgf("remaining cities: %s", cities.String())
 }
