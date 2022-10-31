@@ -303,6 +303,7 @@ func (w *World) LogWorldState(debugLogger log.Logger) {
 	w.printAliensInfo(debugLogger)
 }
 
+// printCitiesTopology prints information about the topology of cities in the world
 func (w *World) printCitiesTopology(debugLogger log.Logger) {
 	for _, city := range w.cities {
 		var topology strings.Builder
@@ -318,6 +319,7 @@ func (w *World) printCitiesTopology(debugLogger log.Logger) {
 	}
 }
 
+// printCitiesConnections prints information about each cities connections
 func (w *World) printCitiesConnections(debugLogger log.Logger) {
 	for cityName, connectionCities := range w.cityConnections {
 		var connections strings.Builder
@@ -329,6 +331,7 @@ func (w *World) printCitiesConnections(debugLogger log.Logger) {
 	}
 }
 
+// printAliensInfo prints information about remaining aliens in the world
 func (w *World) printAliensInfo(debugLogger log.Logger) {
 	var aliens strings.Builder
 	for id, alien := range w.aliens {
@@ -341,6 +344,7 @@ func (w *World) printAliensInfo(debugLogger log.Logger) {
 	debugLogger.Debug().Msgf("Aliens: %s", aliens.String())
 }
 
+// printExistingCities prints the names of all cities in the world currently existing
 func (w *World) printExistingCities(debugLogger log.Logger) {
 	var cities strings.Builder
 
