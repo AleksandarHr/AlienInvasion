@@ -2,6 +2,7 @@ package structs
 
 type Direction int64
 
+// enum to represent the four directions for neighbour city links
 const (
 	North Direction = iota
 	East
@@ -10,6 +11,7 @@ const (
 	Invalid
 )
 
+// String returns a representation of the given direction
 func (dir Direction) String() string {
 	switch dir {
 	case North:
@@ -24,6 +26,7 @@ func (dir Direction) String() string {
 	return "Invalid Direction"
 }
 
+// StringToDirection returns a direction provided a relevant string
 func StringToDirection(dir string) Direction {
 	switch dir {
 	case "north":
@@ -34,20 +37,6 @@ func StringToDirection(dir string) Direction {
 		return South
 	case "west":
 		return West
-	}
-	return Invalid
-}
-
-func (dir Direction) OppositeDirection() Direction {
-	switch dir {
-	case North:
-		return South
-	case East:
-		return West
-	case South:
-		return North
-	case West:
-		return East
 	}
 	return Invalid
 }

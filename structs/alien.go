@@ -1,7 +1,6 @@
 package structs
 
 import (
-	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
@@ -10,12 +9,16 @@ import (
 	petname "github.com/dustinkirkland/golang-petname"
 )
 
+// Alien structure to represent information about an alien
 type Alien struct {
 	ID       int
 	Name     string
 	Location *City
 }
 
+// CreateAlien constructs an alien with a provided integer ID
+//
+//	and a randomly generated pet name
 func CreateAlien(newAlienID int) *Alien {
 	alien := &Alien{ID: newAlienID}
 	alienName := alien.GiveAlienPetName(3, "-")
@@ -23,24 +26,32 @@ func CreateAlien(newAlienID int) *Alien {
 	return alien
 }
 
-func (a *Alien) MoveToCity(newLocation *City) {
+// MovetoCity changes the location of the alien to the provided city
+func (a *Alien) MoveToCity(newLocation *City) error {
+	if newLocation == nil {
+		return &InvalidCityError{city: newLocation}
+	}
 	a.Location = newLocation
-	fmt.Printf("Alien %d moved to %s\n", a.ID, (newLocation.Name))
+	return nil
 }
 
+// PickRandomNeighbourCity randomly chooses a city neighbouring the current alien location
 func (a *Alien) PickRandomNeighbourCity() (*City, error) {
 	alienCity := a.Location
+
+	if len(alienCity.Neighbours) == 0 {
+		return nil, nil
+	}
+
 	availableDirections := []Direction{}
-	for dir, _ := range alienCity.Neighbours {
+	for dir := range alienCity.Neighbours {
 		availableDirections = append(availableDirections, dir)
 	}
 
-	if len(availableDirections) == 0 {
-		fmt.Printf("Alien %d is trapped in %s\n", a.ID, a.Location.Name)
-		return nil, fmt.Errorf("Alien is trapped")
+	directionIndex, err := utils.GenerateRandomNumber(len(availableDirections))
+	if err != nil {
+		return nil, err
 	}
-
-	directionIndex, _ := utils.GenerateRandomNumber(len(availableDirections))
 	randomDirection := availableDirections[directionIndex]
 	randomNextCity := alienCity.Neighbours[randomDirection]
 
@@ -48,10 +59,12 @@ func (a *Alien) PickRandomNeighbourCity() (*City, error) {
 	return randomNextCity, nil
 }
 
+// String returns the alien information as a string
 func (a *Alien) String() string {
 	return "Alien " + strconv.Itoa(a.ID) + " is currently located in " + (a.Location.Name)
 }
 
+// GiveAlienPetName generates a petname for the alien
 func (a *Alien) GiveAlienPetName(wordCount int, nameSeparator string) string {
 	rand.Seed(time.Now().UnixNano())
 	alienName := petname.Generate(wordCount, nameSeparator) + "_" + strconv.Itoa(a.ID)
