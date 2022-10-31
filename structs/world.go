@@ -259,13 +259,25 @@ func (w *World) GetFreeAliens() ([]*Alien, error) {
 	return currentFreeAliens, nil
 }
 
-// IsAlienStillAliveAndFree checks if a given alien is still alive and free
-func (w *World) IsAlienStillAliveAndFree(alien *Alien) (bool, error) {
+// IsAlienFree checks if a given alien is still free
+func (w *World) IsAlienFree(alien *Alien) (bool, error) {
 	if alien == nil {
 		return false, &InvalidAlienError{alien: alien}
 	}
 
 	if _, exists := w.freeAliens[alien.ID]; exists {
+		return true, nil
+	}
+	return false, nil
+}
+
+// IsAlienAlive checks if a given alien is still alive
+func (w *World) IsAlienAlive(alien *Alien) (bool, error) {
+	if alien == nil {
+		return false, &InvalidAlienError{alien: alien}
+	}
+
+	if _, exists := w.aliens[alien.ID]; exists {
 		return true, nil
 	}
 	return false, nil
