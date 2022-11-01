@@ -16,7 +16,7 @@ var (
 	maxIterations      int
 
 	rootCmd = &cobra.Command{
-		Use:   "alien-invasion",
+		Use:   "AlienInvasion",
 		Short: "Simulate an alien invasion of a made-up world.",
 		Long:  `Create a made-up world and spawn aliens around it. Simulate alien movement around the world.`,
 		Run: func(cmd *cobra.Command, args []string) {

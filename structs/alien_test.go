@@ -31,7 +31,7 @@ func TestMoveAlienToCity(t *testing.T) {
 	alienCity := CreateCity(randomString)
 	err := alien.MoveToCity(alienCity)
 	if err != nil {
-		t.Fatalf("push failed: %v", err)
+		t.Fatalf("Adding alien to city failed: %v", err)
 	}
 	assert.Equal(alien.Location.Name, randomString, "The two city names should be the same.")
 	assert.Equal(alien.Location, alienCity, "The two cities should be the same.")
@@ -45,15 +45,30 @@ func TestPickRandomNeighbourOfIsolatedCity(t *testing.T) {
 	assert := assert.New(t)
 
 	alien := CreateAlien(1)
-	alienCity := CreateCity("Random City Name")
+	alienCity := CreateCity("RandomCityName")
 	err := alien.MoveToCity(alienCity)
 	if err != nil {
-		t.Fatalf("push failed: %v", err)
+		t.Fatalf("Adding alien to city failed: %v", err)
 	}
 
 	assert.Equal(len(alien.Location.Neighbours), 0, "The city should have 0 neighbours.")
-	_, err = alien.PickRandomNeighbourCity()
-	assert.EqualError(err, "Alien is trapped")
+	randomNeighbour, _ := alien.PickRandomNeighbourCity()
+	assert.Nil(randomNeighbour, "Alien is trapped, no city should have been chosen.")
+}
+
+func TestPickRandomNeighbour(t *testing.T) {
+	assert := assert.New(t)
+
+	alien := CreateAlien(1)
+	alienCity := CreateCity("RandomCityName")
+	neighbourCity := CreateCity("NeighbourCityName")
+	alienCity.AddNeighbour(North, neighbourCity)
+	alien.MoveToCity(alienCity)
+
+	assert.Equal(len(alien.Location.Neighbours), 1, "The city should have 1 neighbour.")
+	randomNeighbour, _ := alien.PickRandomNeighbourCity()
+	assert.NotNil(randomNeighbour, "Alien is not trapped, a neighbour city should have been chosen.")
+	assert.Equal(randomNeighbour, neighbourCity, "Cities should be the same.")
 }
 
 func TestGiveAlienPetName(t *testing.T) {

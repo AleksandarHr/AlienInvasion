@@ -55,13 +55,7 @@ func (a *Alien) PickRandomNeighbourCity() (*City, error) {
 	randomDirection := availableDirections[directionIndex]
 	randomNextCity := alienCity.Neighbours[randomDirection]
 
-	// fmt.Printf("Alien %d wants to move %s from %s to %s\n", a.ID, randomDirection.String(), a.Location.Name, randomNextCity.Name)
 	return randomNextCity, nil
-}
-
-// String returns the alien information as a string
-func (a *Alien) String() string {
-	return "Alien " + strconv.Itoa(a.ID) + " is currently located in " + (a.Location.Name)
 }
 
 // GiveAlienPetName generates a petname for the alien
